@@ -1,0 +1,309 @@
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { createInvoice } from "../../services/invoiceService";
+import { getClients } from "../../services/clientService";
+import { getQuotes } from "../../services/quoteService";
+
+import {
+  Box,
+  Card,
+  CardContent,
+  Grid,
+  Typography,
+  TextField,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  Button,
+  FormControlLabel,
+  Switch,
+} from "@mui/material";
+
+export default function InvoiceCreatePage() {
+  const navigate = useNavigate();
+
+  const [clients, setClients] = useState([]);
+  const [quotes, setQuotes] = useState([]);
+  const [selectedClient, setSelectedClient] = useState(null);
+
+  const [form, setForm] = useState({
+    client: "",
+    quote: "",
+    numeroFactura: "",
+    fechaFactura: "",
+    importeSinIVA: "",
+    importeConIVA: "",
+    pagado: false,
+    fechaPago: "",
+    importePago: "",
+  });
+
+  /** CARGAR CLIENTES */
+  useEffect(() => {
+    async function loadClients() {
+      const res = await getClients();
+      setClients(res.data);
+    }
+    loadClients();
+  }, []);
+
+  /** CARGAR COTIZACIONES SEGÚN CLIENTE */
+  useEffect(() => {
+    if (!form.client) return;
+
+    const cli = clients.find((c) => c._id === form.client);
+    setSelectedClient(cli);
+
+    async function loadQuotes() {
+      const res = await getQuotes();
+      const filtered = res.data.filter((q) => {
+        const quoteClientId = q.client?._id || q.client;
+        return quoteClientId === form.client;
+      });
+      setQuotes(filtered);
+    }
+
+    loadQuotes();
+  }, [form.client, clients]);
+
+  /** AUTOCOMPLETAR IMPORTE DE COTIZACION */
+  useEffect(() => {
+    if (!form.quote) return;
+
+    const selectedQuote = quotes.find((q) => q._id === form.quote);
+    if (!selectedQuote) return;
+
+    const importe = selectedQuote.total || 0;
+
+    setForm((prev) => ({
+      ...prev,
+      importeSinIVA: importe,
+      importeConIVA: Number((importe * 1.16).toFixed(2)),
+    }));
+  }, [form.quote, quotes]);
+
+
+  /** CALCULAR IVA AUTOMATICO SI IMPORTE SIN IVA CAMBIA */
+  useEffect(() => {
+    if (!form.importeSinIVA) return;
+
+    const base = Number(form.importeSinIVA);
+    const conIVA = Number((base * 1.16).toFixed(2));
+
+    setForm((prev) => ({
+      ...prev,
+      importeConIVA: conIVA,
+    }));
+  }, [form.importeSinIVA]);
+
+
+  const handleChange = (e) => {
+    setForm({ ...form, [e.target.name]: e.target.value });
+  };
+
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    try {
+      await createInvoice(form);
+      navigate("/invoices");
+    } catch (error) {
+      alert(error.response?.data?.message || "Error al crear factura");
+    }
+  };
+
+  return (
+    <Box maxWidth="1200px" mx="auto" mt={4} px={3}>
+      <Typography variant="h4" fontWeight={700} mb={3}>
+        Crear Factura
+      </Typography>
+
+      <Button variant="outlined" sx={{ mb: 3 }} onClick={() => navigate("/invoices")}>
+        Volver
+      </Button>
+
+      <Card elevation={3}>
+        <CardContent>
+          <form onSubmit={handleSubmit}>
+
+            {/* CLIENTE */}
+            <Typography variant="h6" fontWeight={700} mb={2}>
+              Cliente
+            </Typography>
+
+            <Grid container spacing={3}>
+              <Grid size={{ xs: 12, md: 4 }}>
+                <FormControl fullWidth>
+                  <InputLabel>Cliente</InputLabel>
+                  <Select
+                    name="client"
+                    value={form.client}
+                    label="Cliente"
+                    onChange={handleChange}
+                    required
+                  >
+                    {clients.map((c) => (
+                      <MenuItem key={c._id} value={c._id}>
+                        {c.nombreComercial}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              </Grid>
+
+              {selectedClient && (
+                <Grid item xs={12} md={4}>
+                  <TextField
+                    fullWidth
+                    label="RFC"
+                    value={selectedClient.rfc}
+                    disabled
+                  />
+                </Grid>
+              )}
+            </Grid>
+
+            {/* COTIZACION */}
+            <Typography variant="h6" fontWeight={700} mt={4} mb={2}>
+              Cotización Ligada
+            </Typography>
+
+            <Grid container spacing={3}>
+              <Grid size={{ xs: 12, md: 4 }}>
+                <FormControl fullWidth>
+                  <InputLabel>Cotización</InputLabel>
+                  <Select
+                    name="quote"
+                    value={form.quote}
+                    label="Cotización"
+                    onChange={handleChange}
+                  >
+                    {quotes.length === 0 && (
+                      <MenuItem disabled>No hay cotizaciones</MenuItem>
+                    )}
+
+                    {quotes.map((q) => (
+                      <MenuItem key={q._id} value={q._id}>
+                        Folio {q.folio} – ${q.total}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              </Grid>
+            </Grid>
+
+            {/* DATOS FACTURA */}
+            <Typography variant="h6" fontWeight={700} mt={4} mb={2}>
+              Datos de Factura
+            </Typography>
+
+            <Grid container spacing={3}>
+              <Grid item xs={12} md={4}>
+                <TextField
+                  fullWidth
+                  label="Número de factura"
+                  name="numeroFactura"
+                  value={form.numeroFactura}
+                  onChange={handleChange}
+                  required
+                />
+              </Grid>
+
+              <Grid item xs={12} md={4}>
+                <TextField
+                  fullWidth
+                  type="date"
+                  label="Fecha factura"
+                  InputLabelProps={{ shrink: true }}
+                  name="fechaFactura"
+                  value={form.fechaFactura}
+                  onChange={handleChange}
+                  required
+                />
+              </Grid>
+
+              <Grid item xs={12} md={4}>
+                <TextField
+                  fullWidth
+                  type="number"
+                  label="Importe sin IVA"
+                  name="importeSinIVA"
+                  value={form.importeSinIVA}
+                  onChange={handleChange}
+                />
+              </Grid>
+
+              <Grid item xs={12} md={4}>
+                <TextField
+                  fullWidth
+                  label="Importe con IVA"
+                  value={form.importeConIVA}
+                  disabled
+                />
+              </Grid>
+            </Grid>
+
+            {/* PAGO */}
+            <Typography variant="h6" fontWeight={700} mt={4} mb={2}>
+              Pago
+            </Typography>
+
+            <FormControlLabel
+              control={
+                <Switch
+                  checked={form.pagado}
+                  onChange={(e) => setForm({ ...form, pagado: e.target.checked })}
+                />
+              }
+              label={form.pagado ? "Pagado" : "No pagado"}
+            />
+
+            {form.pagado && (
+              <Grid container spacing={3} mt={1}>
+                <Grid item xs={12} md={4}>
+                  <TextField
+                    fullWidth
+                    type="date"
+                    label="Fecha pago"
+                    InputLabelProps={{ shrink: true }}
+                    name="fechaPago"
+                    value={form.fechaPago}
+                    onChange={handleChange}
+                  />
+                </Grid>
+
+                <Grid item xs={12} md={4}>
+                  <TextField
+                    fullWidth
+                    type="number"
+                    label="Importe pagado"
+                    name="importePago"
+                    value={form.importePago}
+                    onChange={handleChange}
+                  />
+                </Grid>
+              </Grid>
+            )}
+
+            {/* BOTONES */}
+            <Box mt={4} display="flex" justifyContent="flex-end" gap={2}>
+              <Button variant="contained" size="large" type="submit">
+                Guardar Factura
+              </Button>
+
+              <Button
+                variant="outlined"
+                size="large"
+                onClick={() => navigate("/invoices")}
+              >
+                Cancelar
+              </Button>
+            </Box>
+          </form>
+        </CardContent>
+      </Card>
+    </Box>
+  );
+}

@@ -1,0 +1,199 @@
+/* Quitar margenes del body y html */
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+}
+
+/* Fondo general con imagen FULL sin bordes */
+.login-wrapper {
+  display: flex;
+  height: 100vh;
+  width: 100vw;
+  background: url("../assets/login-bg.jpg") no-repeat center center/cover;
+  color: white;
+  overflow: hidden;
+}
+
+/* Panel izquierdo */
+.login-left {
+  flex: 1;
+  padding: 60px;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center; /* << CENTRAR LOGO Y TEXTO */
+  text-align: center;
+}
+
+/* Ajustar tamaño y centrado del logo */
+.logo {
+  width: 260px;          /* << LOGO MÁS GRANDE */
+  max-width: 70%;
+  margin-bottom: 40px;
+}
+
+/* Título de bienvenida */
+.welcome-title {
+  font-size: 50px;
+  font-weight: 700;
+  margin-bottom: 20px;
+}
+
+/* Texto descriptivo */
+.welcome-text {
+  max-width: 440px;
+  font-size: 17px;
+  line-height: 1.55;
+  color: #eaeaea;
+}
+
+/* Panel derecho */
+.login-right {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+/* Tarjeta del formulario */
+.form-card {
+  width: 420px;
+  background: white;
+  color: #222;
+  border-radius: 18px;
+  padding: 45px;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.2);
+  animation: fadeIn 0.4s ease;
+}
+
+/* Título del formulario */
+.signin-title {
+  font-size: 30px;
+  font-weight: 700;
+  margin-bottom: 25px;
+  text-align: left;
+}
+
+/* Inputs más proporcionados */
+.form-group {
+  margin-bottom: 18px;
+}
+
+.form-group label {
+  font-size: 15px;
+  font-weight: 600;
+  display: block;
+  margin-bottom: 6px;
+  color: #333;
+}
+
+.form-group input {
+  width: 100%;
+  padding: 12px 14px;       /* << Ajuste más consistente */
+  border: 1px solid #cfcfcf;
+  border-radius: 8px;
+  font-size: 15px;
+  transition: 0.2s ease;
+  box-sizing: border-box;
+  height: 42px;             /* << ALTO UNIFORME */
+}
+
+.form-group input:focus {
+  border-color: #4caf50;
+  box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.25);
+  outline: none;
+}
+
+/* Checkbox */
+.remember {
+  font-size: 14px;
+  margin-bottom: 15px;
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+/* Error */
+.error {
+  color: #e11d48;
+  font-size: 14px;
+  margin-bottom: 12px;
+}
+
+/* Botón */
+.btn-login {
+  width: 100%;
+  padding: 12px;
+  background: #4caf50;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 17px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: 0.25s ease;
+  margin-bottom: 15px;
+}
+
+.btn-login:hover {
+  background: #3d8a41;
+}
+
+/* Enlaces */
+.forgot-password {
+  display: block;
+  text-align: center;
+  color: #4caf50;
+  font-size: 14px;
+  margin-bottom: 20px;
+  text-decoration: none;
+}
+
+.forgot-password:hover {
+  text-decoration: underline;
+}
+
+/* Footer legal */
+.legal {
+  font-size: 12px;
+  text-align: center;
+  color: #555;
+}
+
+.legal a {
+  color: #4caf50;
+  text-decoration: none;
+}
+
+.legal a:hover {
+  text-decoration: underline;
+}
+
+/* Animación suave */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Responsive */
+@media (max-width: 900px) {
+  .login-wrapper {
+    flex-direction: column;
+  }
+
+  .login-left {
+    display: none;
+  }
+
+  .login-right {
+    padding: 40px 20px;
+  }
+}

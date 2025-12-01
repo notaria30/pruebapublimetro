@@ -1,0 +1,89 @@
+############################
+#   ARCHIVOS DEL SISTEMA   #
+############################
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*.tmp
+*.temp
+
+############################
+#        NODE / NPM        #
+############################
+node_modules/
+**/node_modules/
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+############################
+#         ENTORNOS         #
+############################
+.env
+.env.*
+!.env.example
+
+############################
+#         BUILD            #
+############################
+dist/
+build/
+out/
+.vite/
+**/dist/
+**/build/
+
+############################
+#      CONFIG EDITORES     #
+############################
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+
+.idea/
+
+############################
+#      BASES DE DATOS      #
+############################
+*.sqlite
+*.db
+*.db3
+*.db-journal
+
+############################
+#   CERTIFICADOS / LLAVES  #
+############################
+*.pem
+*.crt
+*.key
+*.p12
+
+############################
+#       CACHE / TEMP       #
+############################
+.cache/
+**/.cache/
+.tmp/
+**/.tmp/
+
+############################
+#         FRONTEND         #
+############################
+# Vite
+.vite/
+*.tsbuildinfo
+
+############################
+#         BACKEND          #
+############################
+# Compilaciones TS si usas (no parece tu caso)
+*.tsbuildinfo
+

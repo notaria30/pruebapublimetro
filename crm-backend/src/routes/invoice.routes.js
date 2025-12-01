@@ -1,0 +1,177 @@
+const express = require("express");
+const Invoice = require("../models/Invoice");
+const Client = require("../models/Client");
+const Quote = require("../models/Quote");
+const Sale = require("../models/Sale");
+const { auth } = require("../middlewares/auth.middleware");
+
+const router = express.Router();
+
+// Crear factura
+router.post("/", auth, async (req, res) => {
+  try {
+    const {
+      client,
+      quote,
+      numeroFactura,
+      fechaFactura,
+      importeSinIVA,
+      pagado,
+      fechaPago,
+      importePago,
+    } = req.body;
+
+    // Asegurarnos de que importeSinIVA sea número
+    const base = Number(importeSinIVA);
+
+    if (Number.isNaN(base)) {
+      return res.status(400).json({
+        message: "importeSinIVA debe ser un número válido",
+      });
+    }
+
+    // 16% de IVA
+    const IVA_RATE = 0.16;
+
+    // Calculamos el importe con IVA (2 decimales)
+    const importeConIVA = Number((base * (1 + IVA_RATE)).toFixed(2));
+
+
+    // Validar cliente
+    const clientData = await Client.findById(client);
+    if (!clientData) {
+      return res.status(404).json({ message: "Cliente no encontrado" });
+    }
+
+    // Validar cotización
+    const quoteData = await Quote.findById(quote);
+    if (!quoteData) {
+      return res.status(404).json({ message: "Cotización no encontrada" });
+    }
+
+    const saleData = await Sale.findOne({ quote });
+
+    const factura = await Invoice.create({
+      client,
+      rfc: clientData.rfc,
+      quote,
+      sale: saleData?._id || null,   // 👈 LIGAMOS FACTURA → VENTA
+      numeroFactura,
+      fechaFactura,
+      importeSinIVA: base,
+      importeConIVA,
+      pagado,
+      fechaPago,
+      importePago,
+      createdBy: req.user._id,
+    });
+    if (pagado && saleData) {
+      saleData.paid = true;
+      saleData.paidAt = fechaPago || new Date();
+      await saleData.save();
+    }
+
+    res.status(201).json({
+      message: "Factura creada correctamente",
+      factura,
+    });
+  } catch (error) {
+    console.error("Error al crear factura:", error);
+    res.status(500).json({ message: "Error interno del servidor" });
+  }
+});
+
+// Listar facturas
+router.get("/", auth, async (req, res) => {
+  try {
+    let invoices;
+
+    if (req.user.role === "OWNER") {
+      invoices = await Invoice.find()
+        .populate("client", "nombreComercial rfc")
+        .populate("quote", "folio total")
+        .populate("createdBy", "name email");
+    } else {
+      invoices = await Invoice.find({ createdBy: req.user._id })
+        .populate("client", "nombreComercial rfc")
+        .populate("quote", "folio total")
+        .populate("createdBy", "name email");
+    }
+
+    res.json(invoices);
+  } catch (error) {
+    console.error("Error al obtener facturas:", error);
+    res.status(500).json({ message: "Error interno del servidor" });
+  }
+});
+
+router.get("/:id", auth, async (req, res) => {
+  try {
+    const invoice = await Invoice.findById(req.params.id)
+      .populate("client", "nombreComercial rfc")
+      .populate("quote", "folio total")
+      .populate("createdBy", "name email");
+
+    if (!invoice) {
+      return res.status(404).json({ message: "Factura no encontrada" });
+    }
+
+    if (req.user.role === "WORKER" && invoice.createdBy._id.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ message: "No tienes permiso para ver esta factura" });
+    }
+
+    res.json(invoice);
+  } catch (error) {
+    console.error("Error al obtener factura:", error);
+    res.status(500).json({ message: "Error interno del servidor" });
+  }
+});
+
+router.put("/:id", auth, async (req, res) => {
+  try {
+    const invoice = await Invoice.findById(req.params.id);
+
+    if (!invoice) {
+      return res.status(404).json({ message: "Factura no encontrada" });
+    }
+
+    if (req.user.role === "WORKER" && invoice.createdBy.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ message: "No tienes permiso para actualizar esta factura" });
+    }
+
+    const updated = await Invoice.findByIdAndUpdate(req.params.id, req.body, {
+      new: true,
+      runValidators: true,
+    });
+
+    res.json({
+      message: "Factura actualizada correctamente",
+      updated,
+    });
+  } catch (error) {
+    console.error("Error al actualizar factura:", error);
+    res.status(500).json({ message: "Error interno del servidor" });
+  }
+});
+
+router.delete("/:id", auth, async (req, res) => {
+  try {
+    const invoice = await Invoice.findById(req.params.id);
+
+    if (!invoice) {
+      return res.status(404).json({ message: "Factura no encontrada" });
+    }
+
+    if (req.user.role !== "OWNER") {
+      return res.status(403).json({ message: "Solo el dueño puede eliminar facturas" });
+    }
+
+    await invoice.deleteOne();
+
+    res.json({ message: "Factura eliminada correctamente" });
+  } catch (error) {
+    console.error("Error al eliminar factura:", error);
+    res.status(500).json({ message: "Error interno del servidor" });
+  }
+});
+module.exports = router;
